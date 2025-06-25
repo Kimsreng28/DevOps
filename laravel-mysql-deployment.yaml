@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: laravel-mysql-deployment
-  labels:
-    app: laravel-mysql
 spec:
   replicas: 1
   selector:
@@ -15,17 +13,17 @@ spec:
         app: laravel-mysql
     spec:
       containers:
-        # Web Server Container (Laravel)
         - name: laravel-web
-          image: laravel-final/laravel-web:latest # Replace with your actual image
+          image: kimsreng28/laravel-custom:latest
           ports:
-            - containerPort: 8080 # Website port
-            - containerPort: 22 # SSH port
+            - containerPort: 8080
           env:
             - name: DB_HOST
-              value: "127.0.0.1" # Using localhost since both containers are in same pod
+              value: "127.0.0.1"
+            - name: DB_PORT
+              value: "3306"
             - name: DB_DATABASE
-              value: "laravel-db" # Replace <yourname> with your actual name
+              value: "kimsrenghai-db"
             - name: DB_USERNAME
               value: "root"
             - name: DB_PASSWORD
@@ -37,27 +35,38 @@ spec:
             limits:
               cpu: "1000m"
               memory: "1Gi"
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  ["/bin/sh", "-c", "sleep 30 && php artisan migrate --force"]
 
-        # MySQL Database Container
         - name: mysql-db
           image: mysql:8.0
           env:
             - name: MYSQL_ROOT_PASSWORD
               value: "Hello@123"
             - name: MYSQL_DATABASE
-              value: "laravel-db"
+              value: "kimsrenghai-db"
           ports:
             - containerPort: 3306
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
-          resources:
-            requests:
-              cpu: "500m"
-              memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command:
+                [
+                  "mysqladmin",
+                  "ping",
+                  "-h",
+                  "127.0.0.1",
+                  "-uroot",
+                  "-pHello@123",
+                ]
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
       volumes:
         - name: mysql-storage
           emptyDir: {}
