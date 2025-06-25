@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-mysql-deployment
+  labels:
+    app: laravel-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel-mysql
+  template:
+    metadata:
+      labels:
+        app: laravel-mysql
+    spec:
+      containers:
+        # Web Server Container (Laravel)
+        - name: laravel-web
+          image: laravel-final/laravel-web:latest # Replace with your actual image
+          ports:
+            - containerPort: 8080 # Website port
+            - containerPort: 22 # SSH port
+          env:
+            - name: DB_HOST
+              value: "127.0.0.1" # Using localhost since both containers are in same pod
+            - name: DB_DATABASE
+              value: "laravel-db" # Replace <yourname> with your actual name
+            - name: DB_USERNAME
+              value: "root"
+            - name: DB_PASSWORD
+              value: "Hello@123"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+        # MySQL Database Container
+        - name: mysql-db
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "Hello@123"
+            - name: MYSQL_DATABASE
+              value: "laravel-db"
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: mysql-storage
+          emptyDir: {}
